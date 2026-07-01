@@ -1,0 +1,8 @@
+*.lock
+
+# Ignore keys
+*.pem
+*.key
+
+# Ignore compiled python
+**/__pycache__/
