@@ -1,5 +1,8 @@
 *.lock
 
+# Ignore vim files
+*.swp
+
 # Ignore keys
 *.pem
 *.key
