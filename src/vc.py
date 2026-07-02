@@ -9,6 +9,7 @@ from datetime import datetime
 from base64 import b64encode, b64decode
 
 import ccore
+import utils
 
 
 TIME_FORMAT = "%d.%m.%Y %H:%M:%S"
@@ -34,14 +35,19 @@ class VC(object):
         self.typ = typ
         self.subject = subject_public_key
 
-    def dump(self):
-        return {
+    def dump(self, only_tbs: bool = False):
+        ret = {
             "issuer":  self.issuer.value,
             "begin":   self.begin.strftime(TIME_FORMAT),
             "end":     self.end.strftime(TIME_FORMAT),
             "typ":     self.typ.value,
             "subject": b64encode(ccore.dump_public_key(self.subject)).decode()
         }
+
+        if self.has_signature and not only_tbs:
+            ret["signature"] = b64encode(self.signature).decode()
+
+        return ret
 
     @staticmethod
     def load(d: dict):
@@ -51,17 +57,36 @@ class VC(object):
         typ = CredentialType(d["typ"])
         subject = ccore.load_public_key(b64decode(d["subject"].encode()))
 
-        return VC(issuer, begin, end, typ, subject)
+        vc = VC(issuer, begin, end, typ, subject)
+
+        if "signature" in d.keys():
+            vc.signature = b64decode(d["signature"].encode())
+
+        return vc
+
+    def save(self, filename: str):
+        utils.write_file(filename, json.dumps(self.dump()).encode())
+
+    @staticmethod
+    def open(filename: str):
+        return VC.load(json.loads(utils.read_file(filename).decode()))
 
     def sign(self, secret_key):
         self.signature = ccore.sign(secret_key,
-                                    json.dumps(self.dump()).encode())
+                                    json.dumps(self.dump(True)).encode())
 
         return self.signature
 
-    def check(self, public_key, signature: bytes):
-        if ccore.check(public_key, signature, json.dumps(self.dump()).encode()):
-            self._signature = signature
-            return True
-        
-        return False
+    @property
+    def has_signature(self):
+        return hasattr(self, "signature")
+
+    def check(self, public_key):
+        if not self.has_signature:
+            raise ValueError("This VC does not have a signature.")
+
+        return ccore.check(public_key, self.signature,
+                           json.dumps(self.dump(True)).encode())
+
+    def currently_valid(self):
+        return self.begin <= datetime.now() <= self.end

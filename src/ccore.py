@@ -7,6 +7,8 @@ from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import ed25519
 from cryptography.exceptions import InvalidSignature
 
+import utils
+
 
 # Constants
 KEY_ENCODING = serialization.Encoding.Raw
@@ -15,15 +17,6 @@ SECRET_KEY_FORMAT = serialization.PrivateFormat.Raw
 SECRET_KEY_ENCRYPTION = serialization.NoEncryption()
 
 PUBLIC_KEY_FORMAT = serialization.PublicFormat.Raw
-
-# Helper functions
-def _read_file(filename: str) -> bytes:
-    with open(filename, "rb") as file:
-        return file.read()
-
-def _write_file(filename: str, data: bytes):
-    with open(filename, "wb") as file:
-        file.write(data)
 
 
 # Public functions
@@ -44,10 +37,10 @@ def load_secret_key(secret_bytes: bytes):
     return ed25519.Ed25519PrivateKey.from_private_bytes(secret_bytes)
 
 def save_secret_key(secret_key, filename: str):
-    _write_file(filename, dump_secret_key(secret_key))
+    utils.write_file(filename, dump_secret_key(secret_key))
 
 def open_secret_key(filename: str):
-    return load_secret_key(_read_file(filename))
+    return load_secret_key(utils.read_file(filename))
 
 # Serialisation routines for public keys
 def dump_public_key(public_key):
@@ -59,10 +52,10 @@ def load_public_key(public_bytes: bytes):
     return ed25519.Ed25519PublicKey.from_public_bytes(public_bytes)
 
 def save_public_key(public_key, filename: str):
-    _write_file(filename, dump_public_key(public_key))
+    utils.write_file(filename, dump_public_key(public_key))
 
 def open_public_key(filename: str):
-    return load_public_key(_read_file(filename))
+    return load_public_key(utils.read_file(filename))
 
 # Routines for cryptographic signatures
 def sign(secret_key, data: bytes):

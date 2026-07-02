@@ -6,6 +6,7 @@
 # Ignore keys
 *.pem
 *.key
+*.vc
 
 # Ignore compiled python
 **/__pycache__/
